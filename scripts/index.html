@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+  <body>
+    <script>
+      window['ai_edge_gallery_get_result'] = async (data) => {
+        try {
+          let cleanData = data || "{}";
+          if (cleanData.startsWith("```json")) {
+            cleanData = cleanData.replace(/```json/g, '').replace(/```/g, '').trim();
+          }
+          const encodedData = encodeURIComponent(cleanData);
+          return JSON.stringify({
+            result: "Tasks extracted and board generated.",
+            webview: {
+              url: `../assets/widget.html?data=${encodedData}`
+            }
+          });
+        } catch (e) {
+          return JSON.stringify({error: "Extraction failed: " + e.message});
+        }
+      };
+    </script>
+  </body>
+</html>
