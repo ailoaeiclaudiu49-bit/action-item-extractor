@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <style>
+    :root {
+      --p1: #ff5252; --p2: #ffb142; --p3: #34ace0;
+    }
+    body {
+      background-color: #f8f9fa; color: #2d3436;
+      font-family: -apple-system, sans-serif; padding: 20px; margin: 0;
+    }
+    .container { max-width: 400px; margin: 0 auto; }
+    
+    /* Header & Progress Ring */
+    .header { 
+      display: flex; align-items: center; justify-content: space-between;
+      background: white; padding: 20px; border-radius: 15px; margin-bottom: 20px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    }
+    .progress-box { position: relative; width: 60px; height: 60px; }
+    svg { transform: rotate(-90deg); width: 60px; height: 60px; }
+    circle {
+      fill: none; stroke-width: 6; stroke-linecap: round;
+      cx: 30; cy: 30; r: 26; transition: stroke-dashoffset 0.5s ease;
+    }
+    .bg { stroke: #eee; }
+    .progress { stroke: #2ecc71; stroke-dasharray: 163.36; stroke-dashoffset: 163.36; }
+    .pct {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      font-size: 12px; font-weight: bold; color: #2ecc71;
+    }
+
+    /* Task List */
+    .task-card {
+      background: white; border-radius: 12px; padding: 15px; margin-bottom: 10px;
+      display: flex; align-items: center; gap: 15px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05); border-left: 5px solid #ccc;
+      transition: all 0.2s;
+    }
+    .task-card.p1 { border-left-color: var(--p1); }
+    .task-card.p2 { border-left-color: var(--p2); }
+    .task-card.p3 { border-left-color: var(--p3); }
+    
+    .cb { width: 22px; height: 22px; cursor: pointer; accent-color: #2ecc71; flex-shrink: 0; }
+    .content { flex-grow: 1; }
+    .text { font-size: 16px; font-weight: 500; margin: 0; }
+    .cat { font-size: 11px; text-transform: uppercase; color: #999; letter-spacing: 0.5px; }
+    
+    .completed { opacity: 0.5; filter: grayscale(1); }
+    .completed .text { text-decoration: line-through; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div>
+        <h3 style="margin:0; font-size: 14px; color: #999;">Board Summary</h3>
+        <p id="summary" style="margin:5px 0 0 0; font-weight: bold; font-size: 14px;">No tasks found.</p>
+      </div>
+      <div class="progress-box">
+        <svg><circle class="bg"/><circle id="ring" class="progress"/></svg>
+        <div id="percent" class="pct">0%</div>
+      </div>
+    </div>
+    <div id="task-list"></div>
+  </div>
+
+  <script>
+    let totalTasks = 0;
+    let doneTasks = 0;
+
+    function updateProgress() {
+      const ring = document.getElementById('ring');
+      const pctText = document.getElementById('percent');
+      const offset = 163.36 - (doneTasks / totalTasks * 163.36);
+      ring.style.strokeDashoffset = totalTasks > 0 ? offset : 163.36;
+      pctText.innerText = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) + "%" : "0%";
+    }
+
+    function toggleTask(cb, cardId) {
+      const card = document.getElementById(cardId);
+      if (cb.checked) {
+        card.classList.add('completed');
+        doneTasks++;
+      } else {
+        card.classList.remove('completed');
+        doneTasks--;
+      }
+      updateProgress();
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    try {
+      if (params.has('data')) {
+        const parsed = JSON.parse(decodeURIComponent(params.get('data')));
+        document.getElementById('summary').innerText = parsed.summary || "Action Items";
+        
+        const list = document.getElementById('task-list');
+        if (parsed.tasks) {
+          totalTasks = parsed.tasks.length;
+          parsed.tasks.forEach((task, i) => {
+            const card = document.createElement('div');
+            card.className = `task-card p${task.priority}`;
+            card.id = `card-${i}`;
+            card.innerHTML = `
+              <input type="checkbox" class="cb" onchange="toggleTask(this, 'card-${i}')">
+              <div class="content">
+                <p class="text">${task.text}</p>
+                <span class="cat">${task.category}</span>
+              </div>
+            `;
+            list.appendChild(card);
+          });
+        }
+        updateProgress();
+      }
+    } catch (e) {
+      document.getElementById('summary').innerText = "Error parsing notes.";
+    }
+  </script>
+</body>
+</html>
